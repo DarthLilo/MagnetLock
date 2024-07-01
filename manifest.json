@@ -1,9 +1,9 @@
 {
     "name": "MagnetLock",
     "version_number": "1.0.0",
-    "website_url": "",
+    "website_url": "https://github.com/DarthLilo/MagnetLock",
     "description": "A simple mod to disable the magnet from v55 in orbit.",
     "dependencies": [
-        
+
     ]
 }
