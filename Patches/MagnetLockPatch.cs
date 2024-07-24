@@ -1,5 +1,7 @@
 using HarmonyLib;
+using MagnetLock.Helpers;
 using UnityEngine;
+using UnityEngine.UIElements.UIR;
 
 namespace MagnetLock.Patches;
 
@@ -32,42 +34,47 @@ public class PatchMagnet
                 magnetLeverTrigger = magnetLeverTriggerLocal;
             }
 
-            UpdateMagnetLock(false);
+            MagnetLock.Logger.LogDebug("Triggering Awake() patch");
+            ChangeMagnetStateLocal(false);
+            
         }
 
         [HarmonyPatch("StartGame")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateGameStart()
         {
-            UpdateMagnetLock(true);
+            MagnetLock.Logger.LogDebug("Triggering StartGame() patch");
+            ChangeMagnetStateLocal(true);
         }
 
         [HarmonyPatch("SetShipReadyToLand")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateOrbit()
         {
-            UpdateMagnetLock(false);
+            MagnetLock.Logger.LogDebug("Triggering SetShipReadyToLand() patch");
+            ChangeMagnetStateLocal(false);
         }
-    }
 
-    public static void UpdateMagnetLock(bool state)
-    {
-        
-        if (magnetLeverTrigger != null)
+        public static void ChangeMagnetStateLocal(bool state)
         {
-            if (state == true)
+            if (magnetLeverTrigger != null)
             {
-                magnetLeverTrigger.interactable = true;
-                magnetLeverTrigger.hoverIcon = defaultHoverIcon;
-                magnetLeverTrigger.disabledHoverIcon = defaultDisabledHoverIcon;
+                if (state == true)
+                {
+                    magnetLeverTrigger.interactable = true;
+                    magnetLeverTrigger.hoverIcon = defaultHoverIcon;
+                    magnetLeverTrigger.disabledHoverIcon = defaultDisabledHoverIcon;
 
-            } else {
-                
-                magnetLeverTrigger.interactable = false;
-                magnetLeverTrigger.hoverIcon = null;
-                magnetLeverTrigger.disabledHoverIcon = null;
+                } else {
+
+                    magnetLeverTrigger.interactable = false;
+                    magnetLeverTrigger.hoverIcon = null;
+                    magnetLeverTrigger.disabledHoverIcon = null;
+                }
+
+                MagnetLockNetworkHelper.Instance.UpdateMagnetStateClientRpc(state);
+
             }
-            
         }
     }
     
