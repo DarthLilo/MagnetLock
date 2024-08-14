@@ -55,6 +55,14 @@ public class PatchMagnet
             ChangeMagnetStateLocal(false);
         }
 
+        [HarmonyPatch("SetMagnetOnServerRpc")]
+        [HarmonyPrefix]
+        private static bool AllowMagnetInteraction(StartOfRound __instance)
+        {
+            if (!__instance.shipHasLanded) return false;
+            return true;
+        }
+
         public static void ChangeMagnetStateLocal(bool state)
         {
             if (magnetLeverTrigger != null)
