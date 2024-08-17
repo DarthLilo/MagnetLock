@@ -1,16 +1,16 @@
 using HarmonyLib;
 using MagnetLock.Helpers;
-using System.Collections;
 using UnityEngine;
+using UnityEngine.UIElements.UIR;
 
 namespace MagnetLock.Patches;
 
 public class PatchMagnet
-{
+{   
     public static Sprite? defaultHoverIcon;
     public static Sprite? defaultDisabledHoverIcon;
-    public static InteractTrigger? magnetLeverTrigger;
 
+    public static InteractTrigger? magnetLeverTrigger;
     public static void Initialize()
     {
         var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -21,6 +21,7 @@ public class PatchMagnet
     [HarmonyPatch(typeof(StartOfRound))]
     private class StartOfRoundPatch
     {
+
         [HarmonyPatch("Awake")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateOrbitInit()
@@ -32,24 +33,25 @@ public class PatchMagnet
                 defaultDisabledHoverIcon = magnetLeverTriggerLocal.disabledHoverIcon;
                 magnetLeverTrigger = magnetLeverTriggerLocal;
             }
-            MagnetLock.Logger.LogInfo("Triggering Awake() patch");
-            ChangeMagnetStateLocal(false);
 
+            MagnetLock.Logger.LogDebug("Triggering Awake() patch");
+            ChangeMagnetStateLocal(false);
+            
         }
 
         [HarmonyPatch("StartGame")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateGameStart()
         {
-            MagnetLock.Logger.LogInfo("Triggering StartGame() patch");
-            CoroutineManager.StartCoroutine(UpdateMagnetState(true));
+            MagnetLock.Logger.LogDebug("Triggering StartGame() patch");
+            ChangeMagnetStateLocal(true);
         }
 
         [HarmonyPatch("SetShipReadyToLand")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateOrbit()
         {
-            MagnetLock.Logger.LogInfo("Triggering SetShipReadyToLand() patch");
+            MagnetLock.Logger.LogDebug("Triggering SetShipReadyToLand() patch");
             ChangeMagnetStateLocal(false);
         }
 
@@ -61,31 +63,27 @@ public class PatchMagnet
             return true;
         }
 
-        private static void ChangeMagnetStateLocal(bool enabled)
+        public static void ChangeMagnetStateLocal(bool state)
         {
             if (magnetLeverTrigger != null)
             {
-                if (enabled)
+                if (state == true)
                 {
                     magnetLeverTrigger.interactable = true;
                     magnetLeverTrigger.hoverIcon = defaultHoverIcon;
                     magnetLeverTrigger.disabledHoverIcon = defaultDisabledHoverIcon;
-                }
-                else
-                {
+
+                } else {
+
                     magnetLeverTrigger.interactable = false;
                     magnetLeverTrigger.hoverIcon = null;
                     magnetLeverTrigger.disabledHoverIcon = null;
                 }
-                MagnetLockNetworkHelper.Instance.UpdateMagnetStateClientRpc(enabled);
+
+                MagnetLockNetworkHelper.Instance.UpdateMagnetStateClientRpc(state);
+
             }
         }
-
-        private static IEnumerator UpdateMagnetState(bool state)
-        {
-            yield return new WaitUntil(() => StartOfRound.Instance.shipHasLanded);
-            ChangeMagnetStateLocal(state);
-        }
     }
-
+    
 }

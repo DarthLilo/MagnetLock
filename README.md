@@ -1,7 +1,7 @@
-# AltMagnetLock
+# MagnetLock
 
-This is a fork of [MagnetLock]() by DarthLilo.
+A simple Lethal Company mod to disable the magnet switch in orbit!
 
-It includes a patch that prevents mods from interacting with the magnet directly while the ship is landing or in orbit.
+Designed to use with mods such as [CelestialTint](https://thunderstore.io/c/lethal-company/p/sfDesat/Celestial_Tint/) or other mods which allow you to exit the ship during orbit.
 
-Built for Lethal Company v61
+Built for Lethal Company v55
