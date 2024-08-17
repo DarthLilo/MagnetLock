@@ -14,18 +14,18 @@ namespace MagnetLock.Helpers
         }
 
         [ClientRpc]
-        public void UpdateMagnetStateClientRpc(bool state)
+        public void UpdateMagnetStateClientRpc(bool enabled)
         {
             if (PatchMagnet.magnetLeverTrigger != null)
             {
-                if (state == true)
+                if (enabled)
                 {
                     PatchMagnet.magnetLeverTrigger.interactable = true;
                     PatchMagnet.magnetLeverTrigger.hoverIcon = PatchMagnet.defaultHoverIcon;
                     PatchMagnet.magnetLeverTrigger.disabledHoverIcon = PatchMagnet.defaultDisabledHoverIcon;
-
-                } else {
-
+                }
+                else
+                {
                     PatchMagnet.magnetLeverTrigger.interactable = false;
                     PatchMagnet.magnetLeverTrigger.hoverIcon = null;
                     PatchMagnet.magnetLeverTrigger.disabledHoverIcon = null;
