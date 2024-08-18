@@ -23,9 +23,9 @@ namespace MagnetLock.Helpers
                     PatchMagnet.magnetLeverTrigger.interactable = true;
                     PatchMagnet.magnetLeverTrigger.hoverIcon = PatchMagnet.defaultHoverIcon;
                     PatchMagnet.magnetLeverTrigger.disabledHoverIcon = PatchMagnet.defaultDisabledHoverIcon;
-
-                } else {
-
+                }
+                else
+                {
                     PatchMagnet.magnetLeverTrigger.interactable = false;
                     PatchMagnet.magnetLeverTrigger.hoverIcon = null;
                     PatchMagnet.magnetLeverTrigger.disabledHoverIcon = null;

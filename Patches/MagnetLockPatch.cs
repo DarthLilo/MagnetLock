@@ -1,16 +1,16 @@
 using HarmonyLib;
 using MagnetLock.Helpers;
+using System.Collections;
 using UnityEngine;
-using UnityEngine.UIElements.UIR;
 
 namespace MagnetLock.Patches;
 
 public class PatchMagnet
-{   
+{
     public static Sprite? defaultHoverIcon;
     public static Sprite? defaultDisabledHoverIcon;
-
     public static InteractTrigger? magnetLeverTrigger;
+
     public static void Initialize()
     {
         var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -21,7 +21,6 @@ public class PatchMagnet
     [HarmonyPatch(typeof(StartOfRound))]
     private class StartOfRoundPatch
     {
-
         [HarmonyPatch("Awake")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateOrbitInit()
@@ -33,25 +32,24 @@ public class PatchMagnet
                 defaultDisabledHoverIcon = magnetLeverTriggerLocal.disabledHoverIcon;
                 magnetLeverTrigger = magnetLeverTriggerLocal;
             }
-
-            MagnetLock.Logger.LogDebug("Triggering Awake() patch");
+            MagnetLock.Logger.LogInfo("Awake() patch triggered");
             ChangeMagnetStateLocal(false);
-            
+
         }
 
         [HarmonyPatch("StartGame")]
         [HarmonyPostfix]
         private static void UpdateMagnetStateGameStart()
         {
-            MagnetLock.Logger.LogDebug("Triggering StartGame() patch");
-            ChangeMagnetStateLocal(true);
+            CoroutineManager.StartCoroutine(EnableMagnetLever());
         }
 
-        [HarmonyPatch("SetShipReadyToLand")]
-        [HarmonyPostfix]
-        private static void UpdateMagnetStateOrbit()
+        [HarmonyPatch(typeof(StartMatchLever), "EndGame")]
+        [HarmonyPrefix]
+        private static void UpdateMagnetStateGameEnd()
         {
-            MagnetLock.Logger.LogDebug("Triggering SetShipReadyToLand() patch");
+            StartOfRound.Instance.SetMagnetOnServerRpc(true);
+            MagnetLock.Logger.LogInfo("Ship Magnet non-operational");
             ChangeMagnetStateLocal(false);
         }
 
@@ -59,31 +57,34 @@ public class PatchMagnet
         [HarmonyPrefix]
         private static bool AllowMagnetInteraction(StartOfRound __instance)
         {
-            if (!__instance.shipHasLanded) return false;
-            return true;
+            return __instance.shipHasLanded;
         }
 
-        public static void ChangeMagnetStateLocal(bool state)
+        private static void ChangeMagnetStateLocal(bool enabled)
         {
             if (magnetLeverTrigger != null)
             {
-                if (state == true)
+                if (enabled)
                 {
                     magnetLeverTrigger.interactable = true;
                     magnetLeverTrigger.hoverIcon = defaultHoverIcon;
                     magnetLeverTrigger.disabledHoverIcon = defaultDisabledHoverIcon;
-
-                } else {
-
+                }
+                else
+                {
                     magnetLeverTrigger.interactable = false;
                     magnetLeverTrigger.hoverIcon = null;
                     magnetLeverTrigger.disabledHoverIcon = null;
                 }
-
-                MagnetLockNetworkHelper.Instance.UpdateMagnetStateClientRpc(state);
-
+                MagnetLockNetworkHelper.Instance.UpdateMagnetStateClientRpc(enabled);
             }
         }
+
+        private static IEnumerator EnableMagnetLever()
+        {
+            yield return new WaitUntil(() => StartOfRound.Instance.shipHasLanded);
+            MagnetLock.Logger.LogInfo("Ship Magnet operational");
+            ChangeMagnetStateLocal(true);
+        }
     }
-    
 }
