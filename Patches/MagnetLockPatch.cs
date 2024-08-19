@@ -1,5 +1,4 @@
 using HarmonyLib;
-using MagnetLock.Helpers;
 using System.Collections;
 using UnityEngine;
 
@@ -15,76 +14,76 @@ public class PatchMagnet
     {
         var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-        harmony.PatchAll(typeof(StartOfRound));
+        harmony.PatchAll(typeof(PatchMagnet));
     }
 
-    [HarmonyPatch(typeof(StartOfRound))]
-    private class StartOfRoundPatch
+    [HarmonyPatch(typeof(StartOfRound), "Awake")]
+    [HarmonyPostfix]
+    private static void UpdateMagnetStateOrbitInit()
     {
-        [HarmonyPatch("Awake")]
-        [HarmonyPostfix]
-        private static void UpdateMagnetStateOrbitInit()
+        var magnetLeverTriggerLocal = StartOfRound.Instance.magnetLever.GetComponent<InteractTrigger>();
+        if (magnetLeverTriggerLocal != null)
         {
-            var magnetLeverTriggerLocal = StartOfRound.Instance.magnetLever.GetComponent<InteractTrigger>();
-            if (magnetLeverTriggerLocal != null)
+            defaultHoverIcon = magnetLeverTriggerLocal.hoverIcon;
+            defaultDisabledHoverIcon = magnetLeverTriggerLocal.disabledHoverIcon;
+            magnetLeverTrigger = magnetLeverTriggerLocal;
+        }
+        MagnetLock.Logger.LogInfo("Awake() patch triggered");
+        ChangeMagnetState(enabled: false);
+    }
+
+    [HarmonyPatch(typeof(RoundManager), "FinishGeneratingNewLevelClientRpc")]
+    [HarmonyPostfix]
+    private static void UpdateMagnetStateGameStart()
+    {
+        GameNetworkManager.Instance.StartCoroutine(EnableMagnetLever());
+    }
+
+    [HarmonyPatch(typeof(StartMatchLever), "EndGame")]
+    [HarmonyPrefix]
+    private static void EnableMagnetOnShipLeave()
+    {
+        StartOfRound.Instance.SetMagnetOnServerRpc(true);
+    }
+
+    [HarmonyPatch(typeof(StartOfRound), "EndGameClientRpc")]
+    [HarmonyPrefix]
+    private static void UpdateMagnetStateGameEnd()
+    {
+        MagnetLock.Logger.LogInfo("Lever disabled");
+        ChangeMagnetState(enabled: false);
+    }
+
+    [HarmonyPatch(typeof(StartOfRound), "SetMagnetOnServerRpc")]
+    [HarmonyPrefix]
+    private static bool AllowMagnetInteraction(StartOfRound __instance)
+    {
+        return __instance.shipHasLanded;
+    }
+
+    private static IEnumerator EnableMagnetLever()
+    {
+        yield return new WaitUntil(() => StartOfRound.Instance.shipHasLanded);
+        ChangeMagnetState(enabled: true);
+        MagnetLock.Logger.LogInfo("Lever enabled");
+    }
+
+    private static void ChangeMagnetState(bool enabled)
+    {
+        if (magnetLeverTrigger != null)
+        {
+            if (enabled)
             {
-                defaultHoverIcon = magnetLeverTriggerLocal.hoverIcon;
-                defaultDisabledHoverIcon = magnetLeverTriggerLocal.disabledHoverIcon;
-                magnetLeverTrigger = magnetLeverTriggerLocal;
+                magnetLeverTrigger.interactable = true;
+                magnetLeverTrigger.hoverIcon = defaultHoverIcon;
+                magnetLeverTrigger.disabledHoverIcon = defaultDisabledHoverIcon;
             }
-            MagnetLock.Logger.LogInfo("Awake() patch triggered");
-            ChangeMagnetStateLocal(false);
-
-        }
-
-        [HarmonyPatch("StartGame")]
-        [HarmonyPostfix]
-        private static void UpdateMagnetStateGameStart()
-        {
-            CoroutineManager.StartCoroutine(EnableMagnetLever());
-        }
-
-        [HarmonyPatch(typeof(StartMatchLever), "EndGame")]
-        [HarmonyPrefix]
-        private static void UpdateMagnetStateGameEnd()
-        {
-            StartOfRound.Instance.SetMagnetOnServerRpc(true);
-            MagnetLock.Logger.LogInfo("Ship Magnet non-operational");
-            ChangeMagnetStateLocal(false);
-        }
-
-        [HarmonyPatch("SetMagnetOnServerRpc")]
-        [HarmonyPrefix]
-        private static bool AllowMagnetInteraction(StartOfRound __instance)
-        {
-            return __instance.shipHasLanded;
-        }
-
-        private static void ChangeMagnetStateLocal(bool enabled)
-        {
-            if (magnetLeverTrigger != null)
+            else
             {
-                if (enabled)
-                {
-                    magnetLeverTrigger.interactable = true;
-                    magnetLeverTrigger.hoverIcon = defaultHoverIcon;
-                    magnetLeverTrigger.disabledHoverIcon = defaultDisabledHoverIcon;
-                }
-                else
-                {
-                    magnetLeverTrigger.interactable = false;
-                    magnetLeverTrigger.hoverIcon = null;
-                    magnetLeverTrigger.disabledHoverIcon = null;
-                }
-                MagnetLockNetworkHelper.Instance.UpdateMagnetStateClientRpc(enabled);
+                magnetLeverTrigger.interactable = false;
+                magnetLeverTrigger.hoverIcon = null;
+                magnetLeverTrigger.disabledHoverIcon = null;
             }
-        }
-
-        private static IEnumerator EnableMagnetLever()
-        {
-            yield return new WaitUntil(() => StartOfRound.Instance.shipHasLanded);
-            MagnetLock.Logger.LogInfo("Ship Magnet operational");
-            ChangeMagnetStateLocal(true);
         }
     }
 }
