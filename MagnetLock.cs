@@ -1,5 +1,6 @@
 using System.Reflection;
 using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
 using MagnetLock.Patches;
@@ -26,21 +27,21 @@ public class MagnetLock : BaseUnityPlugin
         // NETCODE PATCHING STUFF
 
         Logger.LogInfo($"Running netcode patchers");
-        
+
         var types = Assembly.GetExecutingAssembly().GetTypes();
-           foreach (var type in types)
-           {
-                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                foreach (var method in methods)
-                {   
-                    var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attributes.Length > 0)
-                    {
-                        method.Invoke(null, null);
-                    }
+        foreach (var type in types)
+        {
+            var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+            foreach (var method in methods)
+            {
+                var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                if (attributes.Length > 0)
+                {
+                    method.Invoke(null, null);
                 }
-           }
-        
+            }
+        }
+
         // NETCODE PATCHING STUFF
 
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
